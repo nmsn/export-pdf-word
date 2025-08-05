@@ -1,5 +1,7 @@
 
 import JsPdf from 'jspdf';
+import { autoTable } from 'jspdf-autotable'
+// import font from './source-han-sans-normal.js';
 import {
   createSerialStack,
   transformImageToBase64AndImg,
@@ -413,7 +415,7 @@ export const drawTable = (pdf: JsPdf, tableConfig?: TableConfig, config?: DrawTa
     columnStyles = {}
   } = tableConfig || {};
 
-  pdf.autoTable({
+  autoTable(pdf, {
     startY: tableY,
     theme: 'grid',
     head,
@@ -610,12 +612,11 @@ export class PDF {
     this.x = border;
     this.y = border;
 
-    // TODO 字体相关配置先不处理
+    // 添加 source-han-sans-normal 字体
     const pdf = new JsPdf('p', 'px', pageSize);
-    // const font = require('@/assets/jsons/font.json');
-    // pdf.addFileToVFS('zh.ttf', font.zh);
-    // pdf.addFont('zh.ttf', 'font', 'normal');
-    // pdf.setFont('font');
+    // pdf.addFileToVFS('source-han-sans-normal.ttf', font);
+    // pdf.addFont('source-han-sans-normal.ttf', 'source-han-sans', 'normal');
+    // pdf.setFont('source-han-sans');
 
     this.pdf = pdf;
 
@@ -783,7 +784,7 @@ export class PDF {
   }
 }
 
-interface IHeading {
+export interface IHeading {
   type: 'heading';
   data: {
     value: string;
@@ -791,7 +792,7 @@ interface IHeading {
   };
 }
 
-interface ITable {
+export interface ITable {
   type: 'table';
   data: {
     value: {
@@ -803,7 +804,7 @@ interface ITable {
   };
 }
 
-interface IImg {
+export interface IImg {
   type: 'img';
   data: {
     value: string; // 图片URL或base64字符串
@@ -811,11 +812,11 @@ interface IImg {
   };
 }
 
-interface IPage {
+export interface IPage {
   type: 'addPage';
 }
 
-interface IText {
+export interface IText {
   type: 'text';
   data: {
     value: string;

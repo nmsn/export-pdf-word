@@ -1,8 +1,8 @@
 
-import coverImg from '@/assets/image/exports/cover/cover.png';
-import backCoverImg from '@/assets/image/exports/backCover/backCover.png';
-import headerImg from '@/assets/image/exports/header/header.png';
-import headingUnderlineImg from '@/assets/image/exports/heading-underline/heading-underline.png';
+const coverImg = '/next.svg';
+const backCoverImg = '/vercel.svg';
+const headerImg = '/globe.svg';
+const headingUnderlineImg = '/file.svg';
 import dayjs from 'dayjs';
 
 interface SerialItem {
@@ -30,7 +30,7 @@ const easyCn2An = (num: number): string => {
   if (!Number(num) && (num <= 0 || num > 10)) {
     throw new Error();
   }
-  const source = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+  const source = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 
   return source[num - 1];
 };
@@ -108,7 +108,7 @@ function createSerialStack(): SerialStack {
     getSerial(): string {
       const lastSerial = serial[serial.length - 1];
       if (lastSerial.curLevel === 1) {
-        return `第${easyCn2An(lastSerial.curSeries[0])}章`;
+        return `Chap ${easyCn2An(lastSerial.curSeries[0])}`;
       }
       return lastSerial.curSeries.join('.');
     },
@@ -313,7 +313,7 @@ function getHeaderImg(): string {
  * @returns {string} 创建日期
  */
 function getCreateDate(): string {
-  return `创建日期 ${dayjs().format('YYYY/MM/DD')}`;
+  return `Date: ${dayjs().format('YYYY/MM/DD')}`;
 }
 
 /**
