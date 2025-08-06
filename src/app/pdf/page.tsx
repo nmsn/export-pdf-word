@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { exportPdf } from '@/lib/pdf';
 import type { IHeading, ITable, IImg, IPage, IText } from '@/lib/pdf';
 
+const testImg = '/test_1.png';
+const testImg2 = '/test_2.png';
+
 export default function PdfPage() {
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +21,7 @@ export default function PdfPage() {
         },
         {
           type: 'text',
-          data: { value: 'This is a sample PDF export page. Click the button above to export the PDF file.' }
+          data: { value: 'This is a sample PDF export page. Click the button above to export the PDF file. This is a sample PDF export page. Click the button above to export the PDF file.' }
         },
         {
           type: 'table',
@@ -29,7 +32,9 @@ export default function PdfPage() {
               body: [
                 ['Project 1', 'Description 1', 'Completed'],
                 ['Project 2', 'Description 2', 'In Progress'],
-                ['Project 3', 'Description 3', 'Not Started']
+                ['Project 3', 'Description 3', 'Not Started'],
+                ['Project 4', 'Description 4', 'Not Started'],
+                ['Project 5', 'Description 5', 'Not Started'],
               ]
             }
           }
@@ -39,9 +44,17 @@ export default function PdfPage() {
           data: { value: 'Image Example', level: 2 }
         },
         {
+          type: 'text',
+          data: { value: 'This is a sample PDF export page. Click the button above to export the PDF file. This is a sample PDF export page. Click the button above to export the PDF file.', options: { indent: true } }
+        },
+        {
+          type: 'heading',
+          data: { value: 'Image Example', level: 2 }
+        },
+        {
           type: 'img',
           data: {
-            value: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDIwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjBGMEYwIi8+Cjx0ZXh0IHg9IjEwMCIgeT0iNTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2NjY2NjYiIGZvbnQtc2l6ZT0iMTQiPkV4YW1wbGUgSW1hZ2U8L3RleHQ+Cjwvc3ZnPgo=',
+            value: testImg,
             options: { align: 'center', width: 200 }
           }
         }

@@ -1,6 +1,6 @@
 
-const coverImg = '/next.svg';
-const backCoverImg = '/vercel.svg';
+const coverImg = '/test_cover.png';
+const backCoverImg = '/test_cover.png';
 const headerImg = '/globe.svg';
 const headingUnderlineImg = '/file.svg';
 import dayjs from 'dayjs';
@@ -561,7 +561,7 @@ interface FormData {
 function getDataTemplate(preData: DocItem[] = [], formData: FormData = {}): DocContentDataItem[] {
   const { contentCheckedList = [] } = formData;
   const documentData: DocContentDataItem[] = [];
-  console.log(preData);
+
   preData?.forEach((item: DocItem) => {
     if ((item.checkType && contentCheckedList.includes(item.checkType)) || !item.checkType) {
       if (item.type && item.type === 'sceneCover') {

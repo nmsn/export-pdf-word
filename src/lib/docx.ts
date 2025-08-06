@@ -35,10 +35,11 @@ const TEST_TEXT = 'test_text';
 /**
  * 从数字获取对应的段落级别
  * @param {number} level 段落级别
- * @returns {string} 段落级别
+ * @returns {HeadingLevel} 段落级别
  */
-function getHeadingLevel(level) {
-  return HeadingLevel[`HEADING_${level}`];
+function getHeadingLevel(level: number): typeof HeadingLevel[keyof typeof HeadingLevel] {
+  const key = `HEADING_${level}` as keyof typeof HeadingLevel;
+  return HeadingLevel[key];
 }
 
 /**
@@ -47,7 +48,7 @@ function getHeadingLevel(level) {
  * @param {{left:number,top:number}} [offset] 位置的偏移量
  * @returns {object} 文本框的属性
  */
-function createTextTitleFrame(percent, offset = {}) {
+function createTextTitleFrame(percent: { left: number; top: number }, offset: { left?: number; top?: number } = {}) {
   offset.left = offset.left || 0;
   offset.top = offset.top || 0;
   return {
@@ -92,15 +93,33 @@ function createTextTitleFrame(percent, offset = {}) {
     }
   };
 }
+interface DocxConfig {
+  headerImg: string;
+  hasHeaderImg?: boolean;
+}
+
+interface DocxOptions {
+  sections?: any[];
+  [key: string]: any;
+}
+
 class Docx {
+  headerImg: string;
+  hasHeaderImg: boolean;
+  section: any[];
+  sections: any[];
+  options: DocxOptions;
+  title: string;
+  serialStack: any;
+
   /**
    * 导出docx文件
-   * @param {{headerImg:string,hasHeaderImg:boolean}} config 每一页的顶部图片，base64
+   * @param {DocxConfig} config 每一页的顶部图片，base64
    * @param {string} title 文件名
-   * @param {object} [options] docx的配置
+   * @param {DocxOptions} [options] docx的配置
    * @returns {Docx} 导出docx的实例
    */
-  constructor(config, title, options = {}) {
+  constructor(config: DocxConfig, title: string, options: DocxOptions = {}) {
     this.headerImg = config.headerImg;
     this.hasHeaderImg = config.hasHeaderImg ?? !!config.headerImg;
     this.section = [];
@@ -132,10 +151,11 @@ class Docx {
    * @param {string} img base64
    * @returns {Promise<ImageRun>} ImageRun
    */
-  async _getheaderImg() {
+  async _getheaderImg(): Promise<ImageRun> {
     const { base64 } = await transformImageToBase64AndImg(this.headerImg);
     return new ImageRun({
       data: base64,
+      type: 'png',
       transformation: {
         width: 600,
         height: 30
@@ -182,7 +202,7 @@ class Docx {
    * @returns {Promise<null>} null
    */
   async addCover() {
-    await this.addImage(getCoverImg(), null, {
+    await this.addImage(getCoverImg(), undefined, {
       transformation: {
         // FIXME 这里最好不要写死
         width: 793,
@@ -220,7 +240,7 @@ class Docx {
    * @returns {Promise<null>} null
    */
   async addBackCover() {
-    await this.addImage(getBackCoverImg(), null, {
+    await this.addImage(getBackCoverImg(), undefined, {
       transformation: {
         // FIXME 这里最好不要写死
         width: 793,
@@ -240,7 +260,7 @@ class Docx {
    * @param {number} level 标题级别
    * @returns {Promise<null>} null
    */
-  async addChapter(text, level) {
+  async addChapter(text: string, level: number): Promise<void> {
     this.section.push(
       new Paragraph({
         children: [
@@ -265,6 +285,7 @@ class Docx {
           children: [
             new ImageRun({
               data: base64,
+              type: 'png',
               transformation: {
                 // FIXME 应该动态计算，这里90是0.2*600
                 width: 110,
@@ -286,7 +307,7 @@ class Docx {
    * @param {object} [parOptions] 段落的配置
    * @returns {void} 导出docx的实例
    */
-  addText(text, alignment = AlignmentType.LEFT, options = {}, parOptions = {}) {
+  addText(text: string, alignment: AlignmentType = AlignmentType.LEFT, options: any = {}, parOptions: any = {}): void {
     this.section.push(
       new Paragraph({
         children: [
@@ -308,7 +329,7 @@ class Docx {
    * @param {IImageOptions} [options] 图片的配置
    * @return {Promise<null>} null
    */
-  async addImage(data, description = '', options = {}) {
+  async addImage(data: string | HTMLImageElement, description: string = '', options: any = {}): Promise<void> {
     const { base64, img } = await transformImageToBase64AndImg(data);
     // TODO 动态计算图片大小
     const { width, height } = img;
@@ -323,7 +344,7 @@ class Docx {
               height: (600 / width) * height
             },
             ...options
-          })
+          } as any)
         ],
         alignment: AlignmentType.CENTER
       })
@@ -344,7 +365,7 @@ class Docx {
    * @param {object} [customOptions] 表格的自定义配置
    * @returns {void} 导出docx的实例
    */
-  addTable(data, title, customOptions = {}) {
+  addTable(data: any, title: string, customOptions: any = {}): void {
     this.addText(
       `${TEST_TEXT}${this.serialStack.getTableSerial()} ${title}`,
       AlignmentType.CENTER
@@ -478,7 +499,7 @@ class Docx {
    * 导出word文件
    * @returns {Promise} 成功或失败
    */
-  async export() {
+  async export(): Promise<void> {
     const doc = new Document(this.options);
     const blob = await Packer.toBlob(doc);
     saveAs(blob, `${this.title}.docx`);
@@ -497,11 +518,20 @@ class Docx {
  * @param {object} [options] new Docx传入的配置
  * @returns {Promise<null>} 是否成功导出
  */
-async function exportDocx(data, title, config = {
-  addBackCover: true
-}, options = {}) {
-  config = {
+async function exportDocx(
+  data: Array<{
+    type: 'heading' | 'table' | 'img' | 'addPage' | 'text';
+    data: any;
+  }>,
+  title: string,
+  config: { addBackCover?: boolean; headerImg?: string } = {
+    addBackCover: true
+  },
+  options: any = {}
+): Promise<void> {
+  const fullConfig: DocxConfig & { addBackCover?: boolean } = {
     headerImg: getHeaderImg(), // 默认带每页头图，如果需要自定义设置options.headerImg = '图片地址'
+    hasHeaderImg: true,
     ...config
   };
   const doc = new Docx(config, title, options);
@@ -538,8 +568,10 @@ async function exportDocx(data, title, config = {
     isEmptyPage = item.type === 'heading';
   }
   await doc.createSection();
-  config.addBackCover && await doc.addBackCover();
-  doc.export(title);
+if (config.addBackCover) {
+  await doc.addBackCover();
+}
+  doc.export();
 }
 
 export { Docx, exportDocx };

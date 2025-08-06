@@ -5,10 +5,12 @@ import { autoTable } from 'jspdf-autotable'
 import {
   createSerialStack,
   transformImageToBase64AndImg,
-  getHeaderImg,
+
+  // getHeaderImg,
   getCoverImg,
   getBackCoverImg,
-  getHeadingUnderlineImg,
+  // getHeadingUnderlineImg,
+
   getCreateDate
 } from './export-utils';
 
@@ -59,6 +61,7 @@ interface TextConfig {
   border?: number;
   maxWidth?: number;
   pageWidth?: number;
+  indent?: boolean;
 }
 
 interface TextResult {
@@ -76,9 +79,11 @@ const drawText = (pdf: JsPdf, text: string, config?: TextConfig): TextResult => 
     align = 'left',
     // pdf 四周的留白
     border = PDF_BORDER,
-    maxWidth = 0,
-    pageWidth = 0
+    pageWidth = 0,
+    indent = false,
   } = config || {};
+
+  const maxWidth = config?.maxWidth ?? pageWidth ?? 0;
 
   pdf.setFontSize(fontSize);
 
@@ -88,6 +93,7 @@ const drawText = (pdf: JsPdf, text: string, config?: TextConfig): TextResult => 
 
   if (lines > 1) {
     let _positionX = 0;
+
 
     if (align === 'center') {
       _positionX = pageWidth / 2;
@@ -101,11 +107,38 @@ const drawText = (pdf: JsPdf, text: string, config?: TextConfig): TextResult => 
       _positionX = pageWidth - border - maxWidth;
     }
 
-    const realX = x ?? _positionX;
-
     const { h } = pdf.getTextDimensions(text, { maxWidth });
     const textHeight = h * pdf.getLineHeightFactor();
-    const _y = y + textHeight / lines;
+
+    const singleLineHeight = textHeight / lines;
+
+    if (indent) {
+      // 有缩进的，那一定是左对齐
+      _positionX = border;
+      let _y = y + singleLineHeight;
+      const _text = `xx${text}`;
+      const indentLines = pdf.splitTextToSize(_text, maxWidth);
+
+      const { w: indentWidth } = pdf.getTextDimensions('xx');
+      indentLines.forEach((line, idx) => {
+        const lineX = idx === 0 ? _positionX + indentWidth : _positionX; // 首行缩进，其余顶格
+        const _line = idx === 0 ? line.slice(2) : line;
+        pdf.text(_line, lineX, _y);
+        _y += singleLineHeight;
+      });
+
+      return {
+        y,
+        endY: _y,
+        x: _positionX,
+        endX: _positionX + textWidth
+      }
+    }
+
+    const realX = x ?? _positionX;
+
+
+    const _y = y + singleLineHeight;
     const _endY = y + textHeight;
 
     pdf.text(text, realX, _y, {
@@ -213,6 +246,10 @@ const drawImg = async (pdf: JsPdf, imgUrl: string, config?: ImgConfig): Promise<
   const imgHeight = img.height;
 
   let _width = (() => {
+    if (width && fill) {
+      return Math.min(width, maxWidth)
+    }
+
     // 给了确定宽度
     if (width) {
       return width;
@@ -510,6 +547,9 @@ const drawCover = async (pdf: JsPdf, name: string) => {
     x: 0,
     y: 0,
     width,
+    pageWidth: width,
+    pageHeight: height,
+    fill: true,
   });
 
   drawText(pdf, `${name}`, {
@@ -533,11 +573,14 @@ const drawCover = async (pdf: JsPdf, name: string) => {
 const drawBackCover = async (pdf: JsPdf) => {
   pdf.addPage();
   const width = pdf.internal.pageSize.getWidth();
-  // const height = pdf.internal.pageSize.getHeight();
+  const height = pdf.internal.pageSize.getHeight();
   await drawImg(pdf, getBackCoverImg(), {
     x: 0,
     y: 0,
     width,
+    pageWidth: width,
+    pageHeight: height,
+    fill: true,
   });
 };
 
@@ -629,6 +672,12 @@ export class PDF {
   }
 
   async addHeader(): Promise<void> {
+    if (!this.headerImg) {
+      // this.y = endY + 5;
+      this.headerHeight = 0;
+      return;
+    }
+
     const { endY = 0 } = await drawImg(this.pdf, this.headerImg, {
       x: 0,
       y: 10,
@@ -694,14 +743,14 @@ export class PDF {
     });
 
     // 如果是二级标题，需要添加下划线
-    if (level === 2) {
-      const { endY } = await drawImg(this.pdf, getHeadingUnderlineImg(), {
-        x: 20,
-        y: this.y,
-        width: 100
-      });
-      this.y = endY + 10;
-    }
+    // if (level === 2) {
+    //   const { endY } = await drawImg(this.pdf, getHeadingUnderlineImg(), {
+    //     x: 20,
+    //     y: this.y,
+    //     width: 100
+    //   });
+    //   this.y = endY + 10;
+    // }
   }
 
   addCatalog(pageNum = 1): void {
@@ -737,12 +786,33 @@ export class PDF {
       y: this.y,
       border: this.border,
       pageWidth: this.pageWidth,
-      // pageHeight: this.pageHeight,
       ...config
     });
 
     this.y = endY + this.padding;
   }
+
+  // addSection(text: string, config?: TextConfig & { indent?: boolean }): void {
+  //   const { indent = false, fontSize = 0 } = config ?? {};
+  //   const indentWidth = indent ? 2 * fontSize : 0;
+  //   const textAllWidth = this.pageWidth - 2 * this.border;
+
+  //   const fakerAllText = `xx${text}`;
+  //   const lines = this.pdf.splitTextToSize(fakerAllText, textAllWidth);
+
+  //   let y = y0;
+
+  //   lines.forEach((line, idx) => {
+  //     const lineX = idx === 0 ? x0 + indent : x0; // 首行缩进，其余顶格
+  //     if (idx === 0) {
+
+  //     }
+
+  //     doc.text(line, lineX, y);
+  //     y += lineGap;
+  //   });
+  //   return y; // 方便连续打印多段
+  // }
 
   async addImage(img: string, config?: ImgConfig): Promise<void> {
     const { bottomText } = config || {};
@@ -844,7 +914,7 @@ export async function exportPdf(
   }
 ): Promise<void> {
   const opts = {
-    headerImg: getHeaderImg(), // 默认带每页头图，如果需要自定义设置options.headerImg = '图片地址'
+    headerImg: '', // 默认带每页头图，如果需要自定义设置options.headerImg = '图片地址'
     ...options
   };
   const pdf = new PDF(opts);
@@ -882,8 +952,8 @@ export async function exportPdf(
   }
   pdf.addCatalog();
   await pdf.addCover(title);
-if (options.addBackCover) {
-  await pdf.addBackCover();
-}
+  if (options.addBackCover) {
+    await pdf.addBackCover();
+  }
   pdf.save(title);
 }
