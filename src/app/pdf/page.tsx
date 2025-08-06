@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { exportPdf } from '@/lib/pdf';
 import type { IHeading, ITable, IImg, IPage, IText } from '@/lib/pdf';
 
+
 const testImg = '/test_1.png';
 const testImg2 = '/test_2.png';
 
@@ -55,6 +56,17 @@ export default function PdfPage() {
           type: 'img',
           data: {
             value: testImg,
+            options: { align: 'center', width: 200 }
+          }
+        },
+        {
+          type: 'text',
+          data: { value: 'This is a sample PDF export page. Click the button above to export the PDF file. This is a sample PDF export page. Click the button above to export the PDF file.', options: { indent: true } }
+        },
+        {
+          type: 'img',
+          data: {
+            value: testImg2,
             options: { align: 'center', width: 200 }
           }
         }
