@@ -35,12 +35,10 @@ export const longFunc = async (input: number) => {
 // 新增一个需要执行5秒的async函数
 const longRunningTask = greenlet(longFunc);
 
-// 调用示例
-longRunningTask(42).then(result => {
-  console.log('5秒计算结果:', result);
-});
-
 export const longFuncInWorker = async () => {
+  // 测试是不是异步效果
+  console.warn('start');
   const result = await longRunningTask(42);
+  console.warn('end')
   return result;
 };

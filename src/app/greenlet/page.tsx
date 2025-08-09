@@ -2,34 +2,44 @@
 
 import { useState } from 'react';
 import { longFuncInWorker, longFunc } from './utils';
-
+import { jsPDF } from 'jspdf';
 export default function GreenletPage() {
   const [result, setResult] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
-  const handleTest = async () => {
-    setLoading(true);
-    try {
-      const res = await longFuncInWorker();
-      // const res = await longFunc(42);
-      setResult(res);
-    } catch (error) {
-      console.error('测试失败:', error);
-    } finally {
-      setLoading(false);
-    }
+  const handleCalc = async () => {
+    // setLoading(true);
+    // try {
+    //   const res = await longFuncInWorker();
+    //   // const res = await longFunc(42);
+    //   setResult(res);
+    // } catch (error) {
+    //   console.error('测试失败:', error);
+    // } finally {
+    //   setLoading(false);
+    // }
+
+    const doc = new jsPDF();
+    doc.text("Hello, world!", 10, 10);
+    doc.save("test.pdf");
+  };
+
+
+  const onInput = (e) => {
+    setInputValue(e.target.value);
+    console.log(e.target.value);
   };
 
   return (
     <div style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
       <h1>Greenlet 测试页面</h1>
       <p>点击按钮执行耗时5秒的异步计算任务</p>
-      
+
       <input
         type="text"
         value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
+        onChange={onInput}
         placeholder="输入测试文字，检查是否卡顿..."
         style={{
           width: '100%',
@@ -40,9 +50,9 @@ export default function GreenletPage() {
           marginBottom: '15px'
         }}
       />
-      
-      <button 
-        onClick={handleTest}
+
+      <button
+        onClick={handleCalc}
         disabled={loading}
         style={{
           padding: '10px 20px',
