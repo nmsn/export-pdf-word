@@ -4,9 +4,8 @@ import { useState } from 'react';
 import { exportPdf } from '@/lib/pdf';
 import type { IHeading, ITable, IImg, IPage, IText } from '@/lib/pdf';
 
-
 const testImg = '/test_1.png';
-const testImg2 = '/test_2.png';
+const testImg2 = '/pic.jpg';
 
 export default function PdfPage() {
   const [loading, setLoading] = useState(false);
@@ -82,7 +81,8 @@ export default function PdfPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* PDF导出部分 */}
         <div className="bg-white shadow-xl rounded-lg p-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
@@ -110,6 +110,13 @@ export default function PdfPage() {
               )}
             </button>
           </div>
+        </div>
+
+        {/* 图片压缩工具部分 */}
+        <div className="bg-white shadow-xl rounded-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+            图片压缩工具
+          </h2>
         </div>
       </div>
     </div>

@@ -243,37 +243,48 @@ interface TransformResult {
  * @returns {Promise<TransformResult>} base64 和 Image HTML 元素
  */
 async function transformImageToBase64AndImg(img: string | HTMLImageElement | Blob | Promise<string>): Promise<TransformResult> {
+  const startTime = performance.now();
+  
   // FIX: 支持Promise
   if (img instanceof Promise) {
-    return transformImageToBase64AndImg(await img);
+    const result = await transformImageToBase64AndImg(await img);
+    const endTime = performance.now();
+    console.log(`transformImageToBase64AndImg (Promise) 执行时间: ${(endTime - startTime).toFixed(2)}ms`);
+    return result;
   }
 
+  let result: TransformResult;
+  
   if (img instanceof HTMLImageElement) {
-    return {
+    result = {
       base64: imageToBase64(img),
       img
     };
-  }
-  if (typeof img === 'string') {
+  } else if (typeof img === 'string') {
     // base64
     if (img.startsWith('data:image')) {
-      return {
+      result = {
         base64: img,
         img: await loadImage(img)
       };
+    } else {
+      // 图片url
+      result = {
+        base64: await urlToBase64Async(img),
+        img: await loadImage(img)
+      };
     }
-    // 图片url
-    return {
-      base64: await urlToBase64Async(img),
-      img: await loadImage(img)
+  } else {
+    // 图片blob
+    result = {
+      base64: await blobToBase64Async(img),
+      img: await loadImage(blobToUrl(img))
     };
   }
-
-  // 图片blob
-  return {
-    base64: await blobToBase64Async(img),
-    img: await loadImage(blobToUrl(img))
-  };
+  
+  const endTime = performance.now();
+  console.log(`transformImageToBase64AndImg 执行时间: ${(endTime - startTime).toFixed(2)}ms`);
+  return result;
 }
 
 /**

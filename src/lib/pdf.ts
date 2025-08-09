@@ -1,16 +1,11 @@
 
 import JsPdf from 'jspdf';
 import { autoTable } from 'jspdf-autotable'
-// import font from './source-han-sans-normal.js';
 import {
   createSerialStack,
   transformImageToBase64AndImg,
-
-  // getHeaderImg,
   getCoverImg,
   getBackCoverImg,
-  // getHeadingUnderlineImg,
-
   getCreateDate
 } from './export-utils';
 
@@ -297,6 +292,7 @@ const drawImg = async (pdf: JsPdf, imgUrl: string, config?: ImgConfig): Promise<
       await addPage?.();
     }
 
+    const addImageStartTime = performance.now();
     pdf.addImage(
       urlBase64,
       'JPEG',
@@ -307,6 +303,8 @@ const drawImg = async (pdf: JsPdf, imgUrl: string, config?: ImgConfig): Promise<
       '',
       'FAST'
     );
+    const addImageEndTime = performance.now();
+    console.log(`pdf.addImage (图片超出页面长度) 执行时间: ${(addImageEndTime - addImageStartTime).toFixed(2)}ms`);
 
     return {
       x: _x,
@@ -335,6 +333,7 @@ const drawImg = async (pdf: JsPdf, imgUrl: string, config?: ImgConfig): Promise<
       });
       const _x = x ?? _positionX;
 
+      const addImageStartTime = performance.now();
       pdf.addImage(
         urlBase64,
         'JPEG',
@@ -345,6 +344,8 @@ const drawImg = async (pdf: JsPdf, imgUrl: string, config?: ImgConfig): Promise<
         '',
         'FAST'
       );
+      const addImageEndTime = performance.now();
+      console.log(`pdf.addImage (缩放图片适应剩余空间) 执行时间: ${(addImageEndTime - addImageStartTime).toFixed(2)}ms`);
 
       return {
         x: _x,
@@ -369,7 +370,10 @@ const drawImg = async (pdf: JsPdf, imgUrl: string, config?: ImgConfig): Promise<
       newY = newPageInitY;
     }
     const realY = newY ?? y;
+    const addImageStartTime = performance.now();
     pdf.addImage(urlBase64, 'JPEG', _x, realY, _width, _height, '', 'FAST');
+    const addImageEndTime = performance.now();
+    console.log(`pdf.addImage (翻页显示图片) 执行时间: ${(addImageEndTime - addImageStartTime).toFixed(2)}ms`);
 
     return {
       x: _x,
@@ -387,6 +391,7 @@ const drawImg = async (pdf: JsPdf, imgUrl: string, config?: ImgConfig): Promise<
   const _x = x ?? _positionX;
 
   // 一般情况
+  const addImageStartTime = performance.now();
   pdf.addImage(
     urlBase64,
     'JPEG',
@@ -397,6 +402,8 @@ const drawImg = async (pdf: JsPdf, imgUrl: string, config?: ImgConfig): Promise<
     '',
     'FAST'
   );
+  const addImageEndTime = performance.now();
+  console.log(`pdf.addImage (一般情况) 执行时间: ${(addImageEndTime - addImageStartTime).toFixed(2)}ms`);
 
   return {
     x: _x,
@@ -655,11 +662,7 @@ export class PDF {
     this.x = border;
     this.y = border;
 
-    // 添加 source-han-sans-normal 字体
     const pdf = new JsPdf('p', 'px', pageSize);
-    // pdf.addFileToVFS('source-han-sans-normal.ttf', font);
-    // pdf.addFont('source-han-sans-normal.ttf', 'source-han-sans', 'normal');
-    // pdf.setFont('source-han-sans');
 
     this.pdf = pdf;
 
@@ -816,7 +819,6 @@ export class PDF {
 
   async addImage(img: string, config?: ImgConfig): Promise<void> {
     const { bottomText } = config || {};
-
     const { endY } = await drawImg(this.pdf, img, {
       y: this.y,
       headerHeight: this.headerHeight,
@@ -957,3 +959,4 @@ export async function exportPdf(
   }
   pdf.save(title);
 }
+
