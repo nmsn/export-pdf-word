@@ -11,7 +11,7 @@ export default function PDFWorkerPage() {
   useEffect(() => {
     // 创建 Web Worker
     if (typeof window !== 'undefined' && !workerRef.current) {
-      // 使用常规的 Web Worker 方法
+      // 使用 public 目录下的 worker.js
       const newWorker = new Worker('/worker.js');
       
       newWorker.onmessage = (e) => {
@@ -88,10 +88,10 @@ export default function PDFWorkerPage() {
         <div className="bg-white shadow-xl rounded-lg p-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Web Worker PDF 生成器
+              Web Worker PDF 表格生成器
             </h1>
             <p className="text-lg text-gray-600 mb-8">
-              使用 Web Worker 在后台生成 PDF 文件，不会阻塞主线程
+              使用 Web Worker 在后台生成带表格的 PDF 文件，不会阻塞主线程
             </p>
 
             {/* 状态显示 */}
@@ -155,6 +155,7 @@ export default function PDFWorkerPage() {
                 <li>• 使用 Web Worker 在后台线程生成 PDF</li>
                 <li>• 不阻塞主线程，界面保持响应</li>
                 <li>• 支持中文显示和表格</li>
+                <li>• 集成 jspdf-autotable 插件</li>
                 <li>• 实时状态反馈</li>
               </ul>
             </div>

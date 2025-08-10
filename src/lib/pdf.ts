@@ -1,13 +1,288 @@
 
 import JsPdf from 'jspdf';
 import { autoTable } from 'jspdf-autotable'
+import dayjs from 'dayjs';
 import {
-  createSerialStack,
-  transformImageToBase64AndImg,
   getCoverImg,
   getBackCoverImg,
-  getCreateDate
 } from './export-utils';
+
+/**
+ * 获取封面创建日期
+ * @returns {string} 创建日期
+ */
+function getCreateDate(): string {
+  return `Date: ${dayjs().format('YYYY/MM/DD')}`;
+}
+
+/**
+ * 图片 url 转换为 base64 字符串
+ * @param {string} url url
+ * @returns {Promise<string>} base64 字符串
+ */
+async function urlToBase64Async(url: string): Promise<string> {
+  const img = await loadImage(url);
+  return imageToBase64(img);
+}
+
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = function () {
+      resolve(image);
+    };
+    image.onerror = function () {
+      reject(new Error(`Load img ${src} failed.`));
+    };
+    image.src = src;
+    image.crossOrigin = "anonymous";//添加此行anonymous必须小写
+  });
+}
+
+/**
+ * HTML IMG 元素转换为 base64 字符串
+ * @param {HTMLImageElement} image Img标签元素
+ * @returns {string} base64字符串
+ */
+function imageToBase64(image: HTMLImageElement): string {
+  const canvas = document.createElement('canvas');
+  const width = image.width;
+  const height = image.height;
+
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  context!.drawImage(image, 0, 0, width, height);
+  return canvas.toDataURL('image/png');
+}
+
+/**
+ * 二进制转换为 URL
+ * @param {Blob} data 二进制数据
+ * @returns {string} URL
+ */
+function blobToUrl(data: Blob): string {
+  const blob = new Blob([data], { type: 'image/jpeg' }); // 假设 data 包含图像数据，类型为 image/jpeg
+  const url = URL.createObjectURL(blob);
+
+  return url;
+}
+
+/**
+ * Blob 转换为 base64 字符串
+ * @param {Blob} blob 二进制数据
+ * @returns {Promise<string>} base64 字符串
+ */
+function blobToBase64Async(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    // 读取文件完成时的回调函数
+    reader.onloadend = function () {
+      // 读取结果是一个 base64 字符串
+      const base64data = reader.result as string;
+      resolve(base64data);
+    };
+
+    reader.onerror = function (e) {
+      reject(e);
+    };
+
+    // 读取二进制文件
+    reader.readAsDataURL(blob);
+
+    // resolve(reader.result);
+  });
+}
+
+/**
+ * 传入图片，自动转换base64
+ * 输出base64和Image HTML元素
+ * @param {string|HTMLImageElement|Blob|Promise<string>} img img数据
+ * @returns {Promise<TransformResult>} base64 和 Image HTML 元素
+ */
+async function transformImageToBase64AndImg(img: string | HTMLImageElement | Blob | Promise<string>): Promise<{ base64: string; img: HTMLImageElement }> {
+  const startTime = performance.now();
+
+  // FIX: 支持Promise
+  if (img instanceof Promise) {
+    const result = await transformImageToBase64AndImg(await img);
+    const endTime = performance.now();
+    console.log(`transformImageToBase64AndImg (Promise) 执行时间: ${(endTime - startTime).toFixed(2)}ms`);
+    return result;
+  }
+
+  let result;
+
+  if (img instanceof HTMLImageElement) {
+    result = {
+      base64: imageToBase64(img),
+      img
+    };
+  } else if (typeof img === 'string') {
+    // base64
+    if (img.startsWith('data:image')) {
+      result = {
+        base64: img,
+        img: await loadImage(img)
+      };
+    } else {
+      // 图片url
+      result = {
+        base64: await urlToBase64Async(img),
+        img: await loadImage(img)
+      };
+    }
+  } else {
+    // 图片blob
+    result = {
+      base64: await blobToBase64Async(img),
+      img: await loadImage(blobToUrl(img))
+    };
+  }
+
+  const endTime = performance.now();
+  console.log(`transformImageToBase64AndImg 执行时间: ${(endTime - startTime).toFixed(2)}ms`);
+  return result;
+}
+
+const easyCn2An = (num: number): string => {
+  if (!Number(num) && (num <= 0 || num > 10)) {
+    throw new Error();
+  }
+  const source = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+
+  return source[num - 1];
+};
+
+interface SerialItem {
+  parentLevel: number;
+  curSeries: number[];
+  curLevel: number;
+  imgNumber: number;
+  tableNumber: number;
+}
+
+interface SerialStack {
+  setSerial: (level: number) => string;
+  getSerial: () => string;
+  getSerialArray: () => number[];
+  getImgSerial: () => string;
+  getTableSerial: () => string;
+}
+
+
+/**
+ * 记录当前heading、图片序号、表格序号
+ * @returns {SerialStack} 记录序号的对象
+ */
+function createSerialStack(): SerialStack {
+  /**
+   * 序号栈
+   */
+  const serial: SerialItem[] = [
+    {
+      parentLevel: 0,
+      curLevel: 0,
+      curSeries: [],
+      imgNumber: 0,
+      tableNumber: 0
+    }
+  ];
+
+  return {
+    /**
+     * 根据新的标题的级别，更新序号栈
+     * @param {number} level 标题级别
+     * @returns {string} 标题序号
+     */
+    setSerial(level: number): string {
+      let pre = serial[serial.length - 1];
+      if (pre.curLevel === level) {
+        // 当前标题是前一个的同级标题
+        serial.push({
+          parentLevel: pre.parentLevel,
+          curSeries: [
+            ...pre.curSeries.slice(0, -1),
+            pre.curSeries[pre.curSeries.length - 1] + 1
+          ],
+          curLevel: level,
+          imgNumber: 0,
+          tableNumber: 0
+        });
+      } else if (pre.curLevel < level) {
+        // 当前标题是前一个的子标题
+        serial.push({
+          parentLevel: pre.curLevel,
+          curSeries: pre.curSeries.concat(1),
+          curLevel: level,
+          imgNumber: 0,
+          tableNumber: 0
+        });
+      } else {
+        // 当前标题是前一个的父标题
+        while (pre.curLevel > level && pre.curLevel !== 0) {
+          serial.pop();
+          pre = serial[serial.length - 1];
+        }
+        serial.push({
+          parentLevel: pre.parentLevel,
+          curSeries: [
+            ...pre.curSeries.slice(0, -1),
+            pre.curSeries[pre.curSeries.length - 1] + 1
+          ],
+          curLevel: level,
+          imgNumber: 0,
+          tableNumber: 0
+        });
+      }
+      return this.getSerial();
+    },
+    /**
+     * 获取当前的标题序号
+     * @returns {string} 标题序号
+     */
+    getSerial(): string {
+      const lastSerial = serial[serial.length - 1];
+      if (lastSerial.curLevel === 1) {
+        return `Chap ${easyCn2An(lastSerial.curSeries[0])}`;
+      }
+      return lastSerial.curSeries.join('.');
+    },
+    /**
+     * 获取当前标题的序号数组
+     * @returns {number[]} 标题序号数组
+     */
+    getSerialArray(): number[] {
+      return serial[serial.length - 1].curSeries;
+    },
+    /**
+     * 获取当前标题下的图片序号，获取后会更新图片序号
+     * @returns {string} 图片序号
+     */
+    getImgSerial(): string {
+      // FIX: 如果没有所属的父标题，直接返回空字符串
+      if (serial.length === 1) {
+        return '';
+      }
+      const lastSerial = serial[serial.length - 1];
+      return [...lastSerial.curSeries, ++lastSerial.imgNumber].join('.');
+    },
+    /**
+     * 获取当前标题下的表格序号，获取后会更新图片序号
+     * @returns {string} 表格序号
+     */
+    getTableSerial(): string {
+      // FIX: 如果没有所属的父标题，直接返回空字符串
+      if (serial.length === 1) {
+        return '';
+      }
+      const lastSerial = serial[serial.length - 1];
+      return [...lastSerial.curSeries, ++lastSerial.tableNumber].join('.');
+    }
+  };
+}
 
 // 扩展的JsPdf类型定义
 /// <reference path="./jspdf-extensions.d.ts" />
