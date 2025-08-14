@@ -1,19 +1,19 @@
 
 import JsPdf from 'jspdf';
 import { autoTable } from 'jspdf-autotable'
-import dayjs from 'dayjs';
-import {
-  getCoverImg,
-  getBackCoverImg,
-} from './export-utils';
+// import dayjs from 'dayjs';
+// import {
+//   getCoverImg,
+//   getBackCoverImg,
+// } from './export-utils';
 
 /**
  * 获取封面创建日期
  * @returns {string} 创建日期
  */
-function getCreateDate(): string {
-  return `Date: ${dayjs().format('YYYY/MM/DD')}`;
-}
+// function getCreateDate(): string {
+//   return `Date: ${dayjs().format('YYYY/MM/DD')}`;
+// }
 
 /**
  * 图片 url 转换为 base64 字符串
@@ -821,50 +821,50 @@ const drawSection = (pdf: JsPdf, chapter: ChapterItem[], config: SectionConfig) 
   });
 };
 
-const drawCover = async (pdf: JsPdf, name: string) => {
-  pdf.insertPage(1);
-  const width = pdf.internal.pageSize.getWidth();
-  const height = pdf.internal.pageSize.getHeight();
-  await drawImg(pdf, getCoverImg(), {
-    x: 0,
-    y: 0,
-    width,
-    pageWidth: width,
-    pageHeight: height,
-    fill: true,
-  });
+// const drawCover = async (pdf: JsPdf, name: string) => {
+//   pdf.insertPage(1);
+//   const width = pdf.internal.pageSize.getWidth();
+//   const height = pdf.internal.pageSize.getHeight();
+//   await drawImg(pdf, getCoverImg(), {
+//     x: 0,
+//     y: 0,
+//     width,
+//     pageWidth: width,
+//     pageHeight: height,
+//     fill: true,
+//   });
 
-  drawText(pdf, `${name}`, {
-    align: 'left',
-    x: 52,
-    y: height * 0.75,
-    fontSize: 32,
-    maxWidth: 300,
-    pageWidth: width
-  });
+//   drawText(pdf, `${name}`, {
+//     align: 'left',
+//     x: 52,
+//     y: height * 0.75,
+//     fontSize: 32,
+//     maxWidth: 300,
+//     pageWidth: width
+//   });
 
-  drawText(pdf, getCreateDate(), {
-    align: 'left',
-    x: 52,
-    y: height * 0.895,
-    fontSize: 14,
-    pageWidth: width
-  });
-};
+//   drawText(pdf, getCreateDate(), {
+//     align: 'left',
+//     x: 52,
+//     y: height * 0.895,
+//     fontSize: 14,
+//     pageWidth: width
+//   });
+// };
 
-const drawBackCover = async (pdf: JsPdf) => {
-  pdf.addPage();
-  const width = pdf.internal.pageSize.getWidth();
-  const height = pdf.internal.pageSize.getHeight();
-  await drawImg(pdf, getBackCoverImg(), {
-    x: 0,
-    y: 0,
-    width,
-    pageWidth: width,
-    pageHeight: height,
-    fill: true,
-  });
-};
+// const drawBackCover = async (pdf: JsPdf) => {
+//   pdf.addPage();
+//   const width = pdf.internal.pageSize.getWidth();
+//   const height = pdf.internal.pageSize.getHeight();
+//   await drawImg(pdf, getBackCoverImg(), {
+//     x: 0,
+//     y: 0,
+//     width,
+//     pageWidth: width,
+//     pageHeight: height,
+//     fill: true,
+//   });
+// };
 
 interface PDFConfig {
   pageSize?: string;
@@ -1050,13 +1050,13 @@ export class PDF {
     });
   }
 
-  async addCover(name: string = TEST_TEXT): Promise<void> {
-    await drawCover(this.pdf, name);
-  }
+  // async addCover(name: string = TEST_TEXT): Promise<void> {
+  //   await drawCover(this.pdf, name);
+  // }
 
-  async addBackCover(): Promise<void> {
-    await drawBackCover(this.pdf);
-  }
+  // async addBackCover(): Promise<void> {
+  //   await drawBackCover(this.pdf);
+  // }
 
   // TODO 需要拖进来跟内部逻辑一起处理，比如分页
   addText(text: string, config?: TextConfig): void {
@@ -1187,7 +1187,7 @@ export async function exportPdf(
   data: (IHeading | ITable | IImg | IPage | IText)[],
   title: string,
   options: ExportOptions = {
-    addBackCover: true
+    addBackCover: false
   }
 ): Promise<void> {
   const opts = {
@@ -1228,10 +1228,10 @@ export async function exportPdf(
     isEmptyPage = item.type === 'heading';
   }
   pdf.addCatalog();
-  await pdf.addCover(title);
-  if (options.addBackCover) {
-    await pdf.addBackCover();
-  }
+  // await pdf.addCover(title);
+  // if (options.addBackCover) {
+  //   await pdf.addBackCover();
+  // }
   pdf.save(title);
 }
 
